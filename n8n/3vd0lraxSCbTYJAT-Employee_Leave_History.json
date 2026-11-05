@@ -1,0 +1,134 @@
+{
+  "name": "Employee Leave History",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "employee-hr-leave-history",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "bff693d8-5f36-47db-9cf0-1b677f1f9623",
+      "name": "Webhook",
+      "webhookId": "f4adb453-4a4b-44e0-b627-7b2efaa77153"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1GS6BkZWcYLWI2QzxCiqFAHkYliwIURdTddpkB5nbgA8",
+          "mode": "list",
+          "cachedResultName": "HR Leave Requests",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GS6BkZWcYLWI2QzxCiqFAHkYliwIURdTddpkB5nbgA8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GS6BkZWcYLWI2QzxCiqFAHkYliwIURdTddpkB5nbgA8/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Employee ID",
+              "lookupValue": "={{ $json.body.employeeId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        256,
+        0
+      ],
+      "id": "e55ba4eb-6860-461c-9443-0238db6e2dc4",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RzTd4n5DJgG5f2pS",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        704,
+        0
+      ],
+      "id": "eb387dd1-112b-4f13-a993-255f10698277",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const employeeId = $('Webhook').first().json.body.employeeId;\n\nconst requests = $input.all();\n\nconst history = requests\n  .filter(item => {\n    return String(item.json['Employee ID']).trim() === String(employeeId).trim();\n  })\n  .map(item => ({\n    requestId: item.json['Request ID'],\n    leaveType: item.json['Leave Type'],\n    startDate: item.json['Start Date'],\n    endDate: item.json['End Date'],\n    reason: item.json['Reason'],\n    status: item.json['Status'],\n    manager: item.json['Manager']\n  }));\n\nreturn [\n  {\n    json: {\n      success: true,\n      employeeId: employeeId,\n      history: history\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "id": "52011e62-df89-406e-b03b-adf9cd79f734",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 1,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

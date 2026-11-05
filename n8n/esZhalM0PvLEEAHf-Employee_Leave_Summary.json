@@ -1,0 +1,191 @@
+{
+  "name": "Employee Leave Summary",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "employee-hr-leave-summary",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2e13318e-8d0a-492e-be90-557679263eaa",
+      "name": "Webhook",
+      "webhookId": "f9b11fab-92c2-46fb-9729-f363f93d8a00"
+    },
+    {
+      "parameters": {
+        "jsCode": "const employee = $('Employee Data').first().json;\nconst requests = $('Leave Requests').all();\n\nconst totalLeave = Number(employee['Leave Balance']) || 0;\nconst sickLeave = Number(employee['Sick Leave']) || 0;\nconst casualLeave = Number(employee['Casual Leave']) || 0;\n\nlet usedLeave = 0;\n\nfor (const item of requests) {\n  const request = item.json;\n\n  const sameEmployee =\n    String(request['Employee ID']).trim() ===\n    String(employee['Employee ID']).trim();\n\n  const approved =\n    String(request['Status']).trim().toLowerCase() === 'approved';\n\n  if (sameEmployee && approved) {\n    const start = new Date(request['Start Date']);\n    const end = new Date(request['End Date']);\n\n    if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {\n      const days =\n        Math.floor(\n          (end.getTime() - start.getTime()) /\n            (1000 * 60 * 60 * 24)\n        ) + 1;\n\n      if (days > 0) {\n        usedLeave += days;\n      }\n    }\n  }\n}\n\nconst remainingLeave = Math.max(\n  totalLeave - usedLeave,\n  0\n);\n\nreturn [\n  {\n    json: {\n      success: true,\n      employeeId: employee['Employee ID'],\n      name: employee['Name'],\n      totalLeaveBalance: totalLeave,\n      sickLeave: sickLeave,\n      casualLeave: casualLeave,\n      usedLeave: usedLeave,\n      remainingLeave: remainingLeave\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ],
+      "id": "bf70121a-403d-4dcb-8dab-07d067940f72",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"employeeId\": \"{{ $json.employeeId }}\",\n  \"name\": \"{{ $json.name }}\",\n  \"totalLeaveBalance\": {{ $json.totalLeaveBalance }},\n  \"sickLeave\": {{ $json.sickLeave }},\n  \"casualLeave\": {{ $json.casualLeave }},\n  \"usedLeave\": {{ $json.usedLeave }},\n  \"remainingLeave\": {{ $json.remainingLeave }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        896,
+        0
+      ],
+      "id": "8047c4ea-14fe-456d-914e-ba8cbb183c82",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1kEs7SLU97j0oaw_mI9kuUFQLLeLmB5E0FTdISqAB_Ug",
+          "mode": "list",
+          "cachedResultName": "HR Employee Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kEs7SLU97j0oaw_mI9kuUFQLLeLmB5E0FTdISqAB_Ug/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kEs7SLU97j0oaw_mI9kuUFQLLeLmB5E0FTdISqAB_Ug/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Employee ID",
+              "lookupValue": "={{ $json.body.employeeId }}"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        0
+      ],
+      "id": "93194fc3-f354-412f-88c6-06524735a04e",
+      "name": "Employee Data",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RzTd4n5DJgG5f2pS",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1GS6BkZWcYLWI2QzxCiqFAHkYliwIURdTddpkB5nbgA8",
+          "mode": "list",
+          "cachedResultName": "HR Leave Requests",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GS6BkZWcYLWI2QzxCiqFAHkYliwIURdTddpkB5nbgA8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GS6BkZWcYLWI2QzxCiqFAHkYliwIURdTddpkB5nbgA8/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Employee ID",
+              "lookupValue": "={{ $json['Employee ID'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        0
+      ],
+      "id": "d7a252ce-34ef-4762-ad30-9180df25d3c0",
+      "name": "Leave Requests",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RzTd4n5DJgG5f2pS",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Employee Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Employee Data": {
+      "main": [
+        [
+          {
+            "node": "Leave Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leave Requests": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 1,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

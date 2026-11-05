@@ -1,0 +1,620 @@
+{
+  "name": "Employee HR Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "streaming"
+        }
+      },
+      "id": "e5960e2e-5365-43cd-bcc8-d448a0065149",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -160,
+        128
+      ],
+      "webhookId": "dc796974-8455-4bfc-8736-8113baf85493"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Authenticated Employee ID: {{ $json.employeeId }}\n\nEmployee Message:\n{{ $json.message }}",
+        "options": {
+          "systemMessage": "You are an Employee HR Assistant.\n\nIDENTITY:\n- The workflow provides the authenticated employee ID as employeeId.\n- Always treat employeeId as the logged-in employee.\n- Never ask the employee for an employee ID.\n- Never use or reveal another employee's HR information.\n- Never use a hardcoded employee ID.\n- Never invent HR data, balances, policies, or approval status.\n\nPERSONAL HR DATA:\n- For the employee's own profile, leave balance, sick leave, casual leave, manager, department, or leave history, use the connected HR tools.\n- When using the HR Employee Data tool, use the authenticated employeeId.\n- Never retrieve another employee's record.\n\nLEAVE POLICY:\n- For company leave rules, notice periods, eligibility, sick leave, casual leave, approval, cancellation, half-day leave, or other policy questions, use the Leave Policy tool.\n- Do not guess company policy.\n\nLEAVE REQUESTS:\n- Get leave type, start date, and end date.\n- Check the employee's balance.\n- Check the Leave Policy.\n- Only then create the request.\n- Create requests as Pending.\n- Never claim a request is Approved unless the system explicitly says so.\n- Never create a request for another employee.\n\nEMAIL:\n- Use the manager email from the authenticated employee's HR record.\n- Never invent or hardcode an email address.\n- Only say an email was sent if the Gmail tool succeeds.\n\nBe concise, professional, and helpful."
+        }
+      },
+      "id": "85947435-1b8a-4f51-a4a8-da9342ed158f",
+      "name": "HR Assistant Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        448,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to retrieve the current employee's HR information from the HR Employee Data Google Sheet.\n\nUse the employee's Employee ID to find the employee's record.\n\nFor leave balance questions:\n- Return the requested Leave Balance, Sick Leave, or Casual Leave.\n- Never guess or invent leave information.\n\nFor leave requests:\n- Retrieve the employee's Manager ID, Manager Name, and Manager Email from the same employee record.\n- Use the Manager Email returned by this tool when sending the leave request through Gmail.\n- Never invent or hardcode a manager email address.\n\nOnly provide information belonging to the current employee.\nNever retrieve or reveal another employee's private HR information.",
+        "documentId": {
+          "__rl": true,
+          "value": "1kEs7SLU97j0oaw_mI9kuUFQLLeLmB5E0FTdISqAB_Ug",
+          "mode": "list",
+          "cachedResultName": "HR Employee Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kEs7SLU97j0oaw_mI9kuUFQLLeLmB5E0FTdISqAB_Ug/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kEs7SLU97j0oaw_mI9kuUFQLLeLmB5E0FTdISqAB_Ug/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Employee ID",
+              "lookupValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('values0_Value', `The authenticated Employee ID of the currently logged-in employee. Never use an Employee ID supplied by the employee's message and never use another employee's ID.`, 'string') }}"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": "={{ true }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        784,
+        240
+      ],
+      "id": "c79640e5-06d6-4c95-afed-1c83024d2e75",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RzTd4n5DJgG5f2pS",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1ca2a5a0-7d37-43fa-aa61-236cc756add2",
+              "name": "employeeId",
+              "value": "={{ $json.body.sessionId.split('-')[1] }}",
+              "type": "string"
+            },
+            {
+              "id": "12bbc951-fa3c-4eb0-a069-2921eca93424",
+              "name": "message",
+              "value": "={{ $json.body.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        112
+      ],
+      "id": "26e32d3e-e5e6-454c-93a7-8c84b25ef984",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-safeguard-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        320,
+        304
+      ],
+      "id": "c6d93717-6a1e-4b46-9e77-ae30683b1da5",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "xJYEeGySLxVwKMzr",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        1584,
+        176
+      ],
+      "id": "0145c88a-0689-4292-826d-e66c41378e38",
+      "name": "Simple Vector Store"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference",
+      "typeVersion": 1,
+      "position": [
+        1248,
+        512
+      ],
+      "id": "96d0d37c-f473-4992-a7b9-e7b636ce9d03",
+      "name": "Embeddings HuggingFace Inference",
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "jVGvxNNem7Zus0qB",
+          "name": "Hugging Face account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "filter": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1088,
+        80
+      ],
+      "id": "8c874058-fa51-48dc-8904-76c9e59c94da",
+      "name": "Search files and folders",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "XIzmeYWR8eJB7dJY",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1tePpO1sPvWTTWF3XwoXAVH-9wMZeCLCh",
+          "mode": "list",
+          "cachedResultName": "HR_Leave_Policy.pdf",
+          "cachedResultUrl": "https://drive.google.com/file/d/1tePpO1sPvWTTWF3XwoXAVH-9wMZeCLCh/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1232,
+        64
+      ],
+      "id": "6ee16340-bf45-4ee2-b5a6-a61b99e7c95d",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "XIzmeYWR8eJB7dJY",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1392,
+        64
+      ],
+      "id": "c229d332-5550-4dcb-ac9e-fccb5977ebb5",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{$json.text}}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1632,
+        448
+      ],
+      "id": "3acb149d-d5a6-4d69-9e2f-3f0122e869ca",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search the company Employee Leave Policy to answer questions about leave rules. Always retrieve the relevant policy section before answering. This tool contains the official company policy text, including Planned Leave, Sick Leave, Casual Leave, Half-Day Leave, approval, cancellation, insufficient balance, overlapping leave, and notice periods.",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        512,
+        432
+      ],
+      "id": "b6116785-d0a7-4a10-b8a0-04abb9a1e087",
+      "name": "Simple Vector Store1"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Append row in sheet in Google SheetsCreate a new employee leave request in the HR Leave Requests sheet.\n\nUse this tool only when the employee explicitly asks to apply/request for leave.\n\nBefore creating the request, the AI Agent must check the employee's leave balance and relevant Leave Policy.\n\nCreate the request with status Pending. Never mark a request as Approved.\n\nOnly create a request for the currently logged-in employee. Never create a request for another employee.",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1GS6BkZWcYLWI2QzxCiqFAHkYliwIURdTddpkB5nbgA8",
+          "mode": "list",
+          "cachedResultName": "HR Leave Requests",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GS6BkZWcYLWI2QzxCiqFAHkYliwIURdTddpkB5nbgA8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GS6BkZWcYLWI2QzxCiqFAHkYliwIURdTddpkB5nbgA8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Request ID": "=REQ-{{ $now.toMillis() }}",
+            "Employee ID": "={{ $('Edit Fields').first().json.employeeId }}",
+            "Leave Type": "={{ $fromAI('leaveType', 'The type of leave requested, such as Sick Leave, Casual Leave, or Annual Leave.', 'string') }}",
+            "Start Date": "={{ $fromAI('startDate', 'The first date of the leave in YYYY-MM-DD format.', 'string') }}",
+            "End Date": "={{ $fromAI('endDate', 'The last date of the leave in YYYY-MM-DD format.', 'string') }}",
+            "Reason": "={{ $fromAI('reason', 'The reason provided by the employee for the leave.', 'string') }}",
+            "Status": "Pending",
+            "Manager": "={{ $fromAI('manager', 'The employee manager name.', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Request ID",
+              "displayName": "Request ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Employee ID",
+              "displayName": "Employee ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Leave Type",
+              "displayName": "Leave Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Start Date",
+              "displayName": "Start Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "End Date",
+              "displayName": "End Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reason",
+              "displayName": "Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Manager",
+              "displayName": "Manager",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        656,
+        288
+      ],
+      "id": "62cc3a4b-2b47-41d2-814f-ec4c2a260f00",
+      "name": "Append row in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RzTd4n5DJgG5f2pS",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Send a message in Gmail",
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', `The email address of the current employee's manager. This must come from the Manager Email field returned by the HR Employee Data tool.`, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', `A short subject for the leave request email, including the employee name and leave dates.`, 'string') }}",
+        "emailType": "text",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', `The leave request email to the manager. Include employee name, employee ID, leave type, start date, end date, reason, and clearly state that the request is Pending and requires manager review.`, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        368
+      ],
+      "id": "ad44ccfe-bf9c-42c7-a8ad-376a33cbfccd",
+      "name": "Send a message in Gmail",
+      "webhookId": "a881f675-ef25-4db2-bdb6-f944114798bd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2hHvJghexNnbQHuO",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "employee-hr-agent",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        64,
+        144
+      ],
+      "id": "fcd08dd8-86ca-4536-9923-0d0c50c82c8c",
+      "name": "Webhook",
+      "webhookId": "85b07ad3-ea9d-44e0-ba74-4949c61b5956"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        784,
+        96
+      ],
+      "id": "e9e05ea3-722f-4066-8a25-8eeaee01baae",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        []
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "HR Assistant Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HR Assistant Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "HR Assistant Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "Embeddings HuggingFace Inference": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Simple Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "HR Assistant Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "HR Assistant Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "HR Assistant Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HR Assistant Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 2,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

@@ -1,0 +1,207 @@
+{
+  "name": "Employee HR Login",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "employee-hr-login",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "99187b83-5907-40cc-82d4-60724c072cd7",
+      "name": "Webhook",
+      "webhookId": "8af7b820-c29e-49f9-86cd-37e59543c1ec"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1kEs7SLU97j0oaw_mI9kuUFQLLeLmB5E0FTdISqAB_Ug",
+          "mode": "list",
+          "cachedResultName": "HR Employee Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kEs7SLU97j0oaw_mI9kuUFQLLeLmB5E0FTdISqAB_Ug/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kEs7SLU97j0oaw_mI9kuUFQLLeLmB5E0FTdISqAB_Ug/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Employee ID",
+              "lookupValue": "={{ $json.body.employeeId }}"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        0
+      ],
+      "id": "a89567a7-e8d1-4072-890b-7af0b47f7642",
+      "name": "Get row(s) in sheet",
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RzTd4n5DJgG5f2pS",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const crypto = require('crypto');\n\nconst employee = $json;\nconst password = $('Webhook').first().json.body.password;\n\nconst stored = employee['Password Hash'];\n\nif (!stored || !password) {\n  return {\n    json: {\n      authenticated: false,\n      sessionId: null,\n      message: 'Invalid Employee ID or password'\n    }\n  };\n}\n\nconst [salt, storedHash] = stored.split(':');\n\nconst hash = crypto\n  .scryptSync(password, salt, 64)\n  .toString('hex');\n\nconst authenticated =\n  crypto.timingSafeEqual(\n    Buffer.from(hash, 'hex'),\n    Buffer.from(storedHash, 'hex')\n  );\n\nreturn {\n  json: {\n    authenticated,\n    sessionId: authenticated\n      ? `session-${employee['Employee ID']}-${Date.now()}`\n      : null,\n    employeeId: employee['Employee ID'],\n    name: employee['Name'],\n    email: employee['Email'],\n    message: authenticated\n      ? 'Login successful'\n      : 'Invalid Employee ID or password'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "f22c0535-5b66-4cdc-b3e4-dbd32cc44eba",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b0574bf5-8cdc-402d-aed2-5c4df61fa3fa",
+              "leftValue": "={{ $json.authenticated }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        0
+      ],
+      "id": "42343637-4f7a-4bc8-8eac-fd4ae7ad4134",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"sessionId\": \"{{ $json.sessionId }}\",\n  \"employeeId\": \"{{ $json.employeeId }}\",\n  \"name\": \"{{ $json.name }}\",\n  \"email\": \"{{ $json.email }}\",\n  \"message\": \"Login successful\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        896,
+        -96
+      ],
+      "id": "3df3865a-29a8-4d49-ae22-04c5222cfcb3",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": false,\n  \"message\": \"Invalid Employee ID or password\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        896,
+        96
+      ],
+      "id": "a32a7b23-e2e0-4dd7-b82b-5bf68e22c812",
+      "name": "Respond to Webhook1"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 1,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

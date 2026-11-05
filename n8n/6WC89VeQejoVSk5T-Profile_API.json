@@ -1,0 +1,136 @@
+{
+  "name": "Profile API",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "employee-hr-profile",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0b7be71c-4357-4208-bdcf-11a09322adad",
+      "name": "Webhook",
+      "webhookId": "06e07a57-8a17-4de7-afb6-92238f36c36b"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1kEs7SLU97j0oaw_mI9kuUFQLLeLmB5E0FTdISqAB_Ug",
+          "mode": "list",
+          "cachedResultName": "HR Employee Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kEs7SLU97j0oaw_mI9kuUFQLLeLmB5E0FTdISqAB_Ug/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kEs7SLU97j0oaw_mI9kuUFQLLeLmB5E0FTdISqAB_Ug/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Employee ID",
+              "lookupValue": "={{ $json.body.employeeId }}"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        0
+      ],
+      "id": "04bc2d5a-e8df-4450-897f-5bf2f1bcfad7",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RzTd4n5DJgG5f2pS",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const employee = $input.first().json;\n\nreturn [\n  {\n    json: {\n      success: true,\n      employeeId: employee['Employee ID'],\n      name: employee['Name'],\n      email: employee['Email'],\n      department: employee['Department'],\n      managerId: employee['Manager ID'],\n      managerName: employee['Manager Name'],\n      managerEmail: employee['Manager Email']\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -16
+      ],
+      "id": "4f6b42e6-9328-4f5a-8f85-aaf776d80802",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        608,
+        -16
+      ],
+      "id": "c4c3c875-46de-4e8a-bb3c-d3e1573e26f6",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 1,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

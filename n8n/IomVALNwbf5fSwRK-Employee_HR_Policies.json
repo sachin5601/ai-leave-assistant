@@ -1,0 +1,144 @@
+{
+  "name": "Employee HR Policies",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "employee-hr-policies",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "696d028f-b1dd-4092-8d4b-db779bebf242",
+      "name": "Webhook",
+      "webhookId": "1f0164f3-77c8-4013-b448-fcd5e6d3439f"
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        },
+        "prompt": "={{ $json.body.query || 'HR leave policy' }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        0
+      ],
+      "id": "b3ea96c5-b713-444e-b222-19cad6ee155c",
+      "name": "Simple Vector Store"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference",
+      "typeVersion": 1,
+      "position": [
+        320,
+        208
+      ],
+      "id": "75d288d2-37d7-4cc4-a73f-395e84c10983",
+      "name": "Embeddings HuggingFace Inference",
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "jVGvxNNem7Zus0qB",
+          "name": "Hugging Face account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst policies = [];\nconst seen = new Set();\n\nfor (const [index, item] of items.entries()) {\n  const data = item.json;\n  const document = data.document ?? data;\n\n  const content = String(\n    document.pageContent ??\n    document.content ??\n    data.pageContent ??\n    data.content ??\n    ''\n  ).trim();\n\n  if (!content) continue;\n\n  const metadata = document.metadata ?? data.metadata ?? {};\n\n  const key = content.toLowerCase().replace(/\\s+/g, ' ');\n  if (seen.has(key)) continue;\n  seen.add(key);\n\n  let title =\n    metadata.title ??\n    metadata.section ??\n    `HR Leave Policy - Section ${index + 1}`;\n\n  // If the content itself contains numbered sections,\n  // use the first section heading as the title.\n  const heading = content.match(/^(\\d+)\\.\\s+([^•]+?)(?=\\s+•|\\s*$)/);\n\n  if (heading) {\n    title = heading[2].trim();\n  }\n\n  policies.push({\n    id: String(metadata.id ?? index + 1),\n    title,\n    content\n  });\n}\n\nreturn [\n  {\n    json: {\n      success: true,\n      policies\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        0
+      ],
+      "id": "3ad982cf-18cc-4a3e-b578-f1e613bf572f",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": {{ $json.success }},\n  \"policies\": {{ JSON.stringify($json.policies) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        816,
+        0
+      ],
+      "id": "3263065e-0487-4e05-8a51-cc9a33e76786",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings HuggingFace Inference": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 1,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
